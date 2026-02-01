@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Inventory Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .main-section {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .input-method-toggle {
+            display: flex;
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .toggle-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .input-section {
+            display: none;
+        }
+
+        .input-section.active {
+            display: block;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: #000;
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        #captureCanvas {
+            display: none;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 120px;
+            border: 3px solid #4CAF50;
+            border-radius: 8px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
+        }
+
+        .scan-instruction {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .manual-input-form {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .photo-upload {
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .upload-btn:hover {
+            border-color: #667eea;
+            background: #f5f5ff;
+        }
+
+        #photoInput {
+            display: none;
+        }
+
+        .preview-image {
+            margin-top: 15px;
+            border-radius: 8px;
+            max-width: 100%;
+            display: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .inventory-list {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .inventory-list h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-all-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 0;
+            width: auto;
+        }
+
+        .inventory-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px;
+            background: white;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .inventory-item-info {
+            flex: 1;
+        }
+
+        .inventory-item-code {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .inventory-item-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .inventory-item-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .inventory-item-qty {
+            background: #667eea;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .delete-item-btn {
+            background: #ff5252;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+
+        .total-items {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 400px) {
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .inventory-item {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 Inventory Scanner</h1>
+            <p>Quick and easy inventory tracking</p>
+        </div>
+
+        <div class="main-section">
+            <div id="statusMessage" class="status-message"></div>
+
+            <!-- Input Method Toggle -->
+            <div class="input-method-toggle">
+                <button class="toggle-btn active" onclick="switchMethod('manual')">✏️ Manual</button>
+                <button class="toggle-btn" onclick="switchMethod('photo')">📸 Photo</button>
+                <button class="toggle-btn" onclick="switchMethod('camera')">🎥 Camera</button>
+            </div>
+
+            <!-- Manual Input Section -->
+            <div id="manualSection" class="input-section active">
+                <div class="manual-input-form">
+                    <div class="form-group">
+                        <label for="manualCode">Product Code</label>
+                        <input type="text" id="manualCode" placeholder="e.g., 531-12-0" autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="manualQty">Quantity</label>
+                        <input type="number" id="manualQty" value="1" min="1">
+                    </div>
+                    <button class="btn-success" onclick="addManualItem()">➕ Add to Inventory</button>
+                </div>
+            </div>
+
+            <!-- Photo Upload Section -->
+            <div id="photoSection" class="input-section">
+                <div class="photo-upload">
+                    <label for="photoInput" class="upload-btn">
+                        📷 Take Photo or Choose from Library
+                    </label>
+                    <input type="file" id="photoInput" accept="image/*" capture="environment">
+                    <img id="previewImage" class="preview-image" alt="Preview">
+                    <canvas id="photoCanvas" style="display: none;"></canvas>
+                </div>
+                <button class="btn-primary" id="analyzePhotoBtn" disabled onclick="analyzePhoto()">🔍 Scan Photo</button>
+            </div>
+
+            <!-- Camera Section -->
+            <div id="cameraSection" class="input-section">
+                <div class="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="captureCanvas"></canvas>
+                    <div class="camera-overlay">
+                        <div class="scan-instruction">Position code here</div>
+                    </div>
+                </div>
+                <button class="btn-primary" id="startCameraBtn" onclick="startCamera()">Start Camera</button>
+                <button class="btn-success" id="captureBtn" disabled onclick="captureAndAnalyze()">📸 Capture & Scan</button>
+            </div>
+
+            <!-- Inventory List -->
+            <div class="inventory-list">
+                <h3>
+                    Scanned Items
+                    <button class="clear-all-btn" onclick="clearAll()" id="clearAllBtn" style="display: none;">Clear All</button>
+                </h3>
+                <div id="inventoryItems">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No items scanned yet</p>
+                    </div>
+                </div>
+                <div class="total-items">
+                    Total Items: <span id="totalCount">0</span>
+                </div>
+            </div>
+
+            <button class="btn-secondary" onclick="exportInventory()">💾 Export to File</button>
+        </div>
+    </div>
+
+    <script>
+        let inventory = {};
+        let stream = null;
+
+        // Switch between input methods
+        function switchMethod(method) {
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.input-section').forEach(section => section.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            
+            if (method === 'manual') {
+                document.getElementById('manualSection').classList.add('active');
+                document.getElementById('manualCode').focus();
+            } else if (method === 'photo') {
+                document.getElementById('photoSection').classList.add('active');
+            } else if (method === 'camera') {
+                document.getElementById('cameraSection').classList.add('active');
+            }
+        }
+
+        // Manual input
+        function addManualItem() {
+            const code = document.getElementById('manualCode').value.trim();
+            const qty = parseInt(document.getElementById('manualQty').value);
+
+            if (!code) {
+                showStatus('Please enter a product code', 'error');
+                return;
+            }
+
+            if (qty < 1) {
+                showStatus('Quantity must be at least 1', 'error');
+                return;
+            }
+
+            addToInventory(code, qty);
+            document.getElementById('manualCode').value = '';
+            document.getElementById('manualQty').value = '1';
+            document.getElementById('manualCode').focus();
+        }
+
+        // Handle Enter key in manual inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('manualCode').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('manualQty').focus();
+                }
+            });
+
+            document.getElementById('manualQty').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addManualItem();
+                }
+            });
+
+            // Photo input handler
+            document.getElementById('photoInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.getElementById('previewImage');
+                        img.src = event.target.result;
+                        img.style.display = 'block';
+                        document.getElementById('analyzePhotoBtn').disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        // Analyze photo (simplified - prompts for manual entry)
+        function analyzePhoto() {
+            const code = prompt('Enter the product code you see in the photo:');
+            if (code && code.trim()) {
+                const qty = prompt('Enter quantity:', '1');
+                if (qty && parseInt(qty) > 0) {
+                    addToInventory(code.trim(), parseInt(qty));
+                    document.getElementById('photoInput').value = '';
+                    document.getElementById('previewImage').style.display = 'none';
+                    document.getElementById('analyzePhotoBtn').disabled = true;
+                }
+            }
+        }
+
+        // Camera functions
+        async function startCamera() {
+            try {
+                // Request camera with better compatibility
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                document.getElementById('startCameraBtn').disabled = true;
+                document.getElementById('startCameraBtn').textContent = '✅ Camera Active';
+                document.getElementById('captureBtn').disabled = false;
+                
+                showStatus('Camera started successfully', 'success');
+            } catch (err) {
+                console.error('Camera error:', err);
+                showStatus('Camera access denied. Please use Manual or Photo mode instead.', 'error');
+                
+                // Switch to manual mode automatically
+                setTimeout(() => {
+                    switchMethod('manual');
+                    document.querySelectorAll('.toggle-btn')[0].classList.add('active');
+                }, 2000);
+            }
+        }
+
+        function captureAndAnalyze() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('captureCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            // Simplified: prompt for manual entry after capture
+            const code = prompt('Enter the product code from the captured image:');
+            if (code && code.trim()) {
+                const qty = prompt('Enter quantity:', '1');
+                if (qty && parseInt(qty) > 0) {
+                    addToInventory(code.trim(), parseInt(qty));
+                }
+            }
+        }
+
+        // Add item to inventory
+        function addToInventory(code, qty) {
+            if (inventory[code]) {
+                inventory[code].quantity += qty;
+                inventory[code].lastUpdated = new Date();
+            } else {
+                inventory[code] = {
+                    quantity: qty,
+                    addedAt: new Date(),
+                    lastUpdated: new Date()
+                };
+            }
+            updateDisplay();
+            showStatus(`Added ${qty} × ${code}`, 'success');
+            saveToLocalStorage();
+        }
+
+        // Update inventory display
+        function updateDisplay() {
+            const container = document.getElementById('inventoryItems');
+            const sortedItems = Object.entries(inventory).sort((a, b) => 
+                b[1].lastUpdated - a[1].lastUpdated
+            );
+
+            if (sortedItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No items scanned yet</p>
+                    </div>
+                `;
+                document.getElementById('clearAllBtn').style.display = 'none';
+            } else {
+                container.innerHTML = '';
+                document.getElementById('clearAllBtn').style.display = 'block';
+                
+                sortedItems.forEach(([code, data]) => {
+                    const item = document.createElement('div');
+                    item.className = 'inventory-item';
+                    const timeStr = data.lastUpdated.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    item.innerHTML = `
+                        <div class="inventory-item-info">
+                            <div class="inventory-item-code">${code}</div>
+                            <div class="inventory-item-time">Last updated: ${timeStr}</div>
+                        </div>
+                        <div class="inventory-item-actions">
+                            <span class="inventory-item-qty">${data.quantity}</span>
+                            <button class="delete-item-btn" onclick="deleteItem('${code}')">×</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            // Update total count
+            const total = Object.values(inventory).reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('totalCount').textContent = total;
+        }
+
+        // Delete individual item
+        function deleteItem(code) {
+            if (confirm(`Remove ${code} from inventory?`)) {
+                delete inventory[code];
+                updateDisplay();
+                saveToLocalStorage();
+                showStatus(`Removed ${code}`, 'info');
+            }
+        }
+
+        // Clear all items
+        function clearAll() {
+            if (confirm('Clear entire inventory? This cannot be undone.')) {
+                inventory = {};
+                updateDisplay();
+                saveToLocalStorage();
+                showStatus('Inventory cleared', 'info');
+            }
+        }
+
+        // Export to file
+        function exportInventory() {
+            if (Object.keys(inventory).length === 0) {
+                showStatus('No items to export', 'error');
+                return;
+            }
+
+            let content = 'INVENTORY LIST\n';
+            content += '='.repeat(50) + '\n';
+            content += `Date: ${new Date().toLocaleString()}\n\n`;
+            content += 'Product Code'.padEnd(30) + 'Quantity\n';
+            content += '-'.repeat(50) + '\n';
+
+            const sortedItems = Object.entries(inventory).sort((a, b) => a[0].localeCompare(b[0]));
+            
+            sortedItems.forEach(([code, data]) => {
+                content += `${code.padEnd(30)}${data.quantity}\n`;
+            });
+
+            const total = Object.values(inventory).reduce((sum, item) => sum + item.quantity, 0);
+            content += '-'.repeat(50) + '\n';
+            content += `TOTAL ITEMS: ${total}\n`;
+            content += `UNIQUE PRODUCTS: ${Object.keys(inventory).length}\n`;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventory_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showStatus('✅ Inventory exported successfully!', 'success');
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.textContent = message;
+
+            setTimeout(() => {
+                statusDiv.className = 'status-message';
+            }, 3000);
+        }
+
+        // Local storage functions
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+            } catch (e) {
+                console.error('Failed to save to local storage:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('inventory');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Convert date strings back to Date objects
+                    Object.keys(parsed).forEach(key => {
+                        parsed[key].addedAt = new Date(parsed[key].addedAt);
+                        parsed[key].lastUpdated = new Date(parsed[key].lastUpdated);
+                    });
+                    inventory = parsed;
+                    updateDisplay();
+                    showStatus('Previous inventory loaded', 'info');
+                }
+            } catch (e) {
+                console.error('Failed to load from local storage:', e);
+            }
+        }
+
+        // Load saved inventory on page load
+        window.addEventListener('load', loadFromLocalStorage);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
