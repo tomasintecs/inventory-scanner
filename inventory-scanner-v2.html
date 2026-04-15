@@ -389,13 +389,25 @@
             align-items: center;
         }
 
-        .manual-entry-row input {
+        .manual-entry-row input[type="text"] {
             flex: 1;
             padding: 12px 14px;
             border: 2px solid #c5cef7;
             border-radius: 8px;
             font-size: 16px;
             font-family: 'Courier New', monospace;
+            background: white;
+            outline: none;
+        }
+
+        .manual-entry-row input[type="number"] {
+            width: 64px;
+            padding: 12px 8px;
+            border: 2px solid #c5cef7;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
             background: white;
             outline: none;
         }
@@ -489,6 +501,8 @@
                 <div class="manual-entry-row">
                     <input type="text" id="manualCodeInput" placeholder="e.g. 531-9002-0 or MY-CUSTOM-CODE"
                            autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+                           onkeypress="if(event.key==='Enter') submitManualCode()">
+                    <input type="number" id="manualQtyInput" value="1" min="1"
                            onkeypress="if(event.key==='Enter') submitManualCode()">
                     <button class="btn-manual-add" onclick="submitManualCode()">Add</button>
                 </div>
@@ -918,29 +932,33 @@
 
     // ── Manual code entry ─────────────────────────────────────────────────────────
     function submitManualCode() {
-        const input   = document.getElementById('manualCodeInput');
-        const code    = input.value.trim().toUpperCase();
-        const resultEl = document.getElementById('manualLookupResult');
+        const codeInput = document.getElementById('manualCodeInput');
+        const qtyInput  = document.getElementById('manualQtyInput');
+        const code      = codeInput.value.trim().toUpperCase();
+        const qty       = Math.max(1, parseInt(qtyInput.value) || 1);
+        const resultEl  = document.getElementById('manualLookupResult');
 
         if (!code) {
             showStatus('⚠️ Please enter a product code', 'info');
+            codeInput.focus();
             return;
         }
 
         const product = lookupProduct(code);
 
         if (product) {
-            resultEl.textContent  = '✅ ' + product.name;
-            resultEl.className    = 'manual-lookup-result manual-lookup-found';
+            resultEl.textContent = '✅ ' + product.name;
+            resultEl.className   = 'manual-lookup-result manual-lookup-found';
         } else {
-            resultEl.textContent  = '⚠️ Not found in database — adding as unknown product';
-            resultEl.className    = 'manual-lookup-result manual-lookup-notfound';
+            resultEl.textContent = '⚠️ Not found in database — adding as unknown product';
+            resultEl.className   = 'manual-lookup-result manual-lookup-notfound';
         }
         resultEl.style.display = 'block';
 
-        addToInventory(code, 1);
-        input.value = '';
-        input.focus();
+        addToInventory(code, qty);
+        codeInput.value = '';
+        qtyInput.value  = '1';
+        codeInput.focus();
 
         setTimeout(() => { resultEl.style.display = 'none'; }, 3000);
     }
